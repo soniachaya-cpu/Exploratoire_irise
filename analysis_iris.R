@@ -462,3 +462,61 @@ corrplot(cor_matrix,
          type = "upper",
          tl.col = "black",
          tl.srt = 45)
+
+
+
+#Importance des variables
+
+varImp <- model$variable.importance
+barplot(varImp,
+        main = "Importance des variables",
+        col = "steelblue")
+
+
+#Courbe de complexité (Pruning)
+printcp(model)
+plotcp(model)
+
+
+
+#Accuracy + Taux d’erreur
+
+accuracy <- mean(pred_test == y_test)
+error_rate <- 1 - accuracy
+
+accuracy
+error_rate
+
+
+#Cross-Validation
+
+model_cv <- rpart(Species ~ ., data = iris,
+                  method = "class",
+                  control = rpart.control(xval = 10))
+printcp(model_cv)
+
+
+
+#PCA
+pca <- prcomp(iris[,1:4], scale. = TRUE)
+
+library(ggplot2)
+pca_df <- data.frame(pca$x, Species = iris$Species)
+
+ggplot(pca_df, aes(PC1, PC2, color = Species)) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  labs(title = "Projection PCA des espèces Iris")
+
+
+#Comparaison avec Random Forest
+
+
+install.packages("randomForest")
+library(randomForest)
+
+rf_model <- randomForest(Species ~ ., data = Train)
+
+pred_rf <- predict(rf_model, X_test)
+
+mean(pred_rf == y_test)
