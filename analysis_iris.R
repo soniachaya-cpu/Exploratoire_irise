@@ -264,169 +264,93 @@ cat("-> Rapport détaillé : voir doc/rapport_iris.Rmd (knit vers PDF).\n")
 cat("-> Structure présentation : doc/structure_presentation_slides.md\n")
 
 
----
-  title: "Rapport d'analyse - Jeu de données Iris"
-author: "Projet R1"
-date: "`r format(Sys.Date(), '%d %B %Y')`"
-output:
-  html_document:
-  toc: true
-toc_float: true
-theme: flatly
-pdf_document:
-  toc: true
-toc_depth: 2
-number_sections: true
-highlight: tango
----
-  
-  ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align = "center", fig.width = 6, fig.height = 4,
-                      message = FALSE, warning = FALSE)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
+# =============================================================================
+# ---------------Arbres de décisions (Algo "Transparent")----------------------
+# =============================================================================
+
+
+
+# =============================================================================
+# ÉTAPE 1 : Charger le dataset Iris
+# =============================================================================
+
 data(iris)
-palette_especes <- c("setosa" = "#2E86AB", "versicolor" = "#A23B72", "virginica" = "#F18F01")
-theme_set(theme_minimal(base_size = 11))
-```
 
-# Introduction
+head(iris)
+summary(iris)
 
-Ce rapport présente l'exploration, les statistiques descriptives et les visualisations du jeu de données **Iris** (Fisher, 1936), composé de 150 mesures de fleurs d'iris réparties en trois espèces. L'objectif est de comprendre la structure des données, les relations entre variables et les tendances par espèce.
 
-# 1. Exploration et préparation des données
+# =============================================================================
+# ÉTAPE 2 : Calcul manuel de l’indice de Gini
+# =============================================================================
 
-## 1.1 Structure du jeu de données
+gini <- function(y) {
+  proportions <- table(y) / length(y)
+  1 - sum(proportions^2)
+}
 
-Le jeu contient **`r nrow(iris)`** observations et **`r ncol(iris)`** variables :
+gini(iris$Species)
 
-- **Sepal.Length**, **Sepal.Width**, **Petal.Length**, **Petal.Width** (en cm) ;
-- **Species** : facteur à 3 niveaux (setosa, versicolor, virginica).
+# =============================================================================
+# ÉTAPE 3 : Construire l’arbre de décision
+# =============================================================================
 
-```{r structure}
-str(iris)
-```
 
-## 1.2 Valeurs manquantes
+install.packages("rpart")
+install.packages("rpart.plot")
 
-```{r na}
-colSums(is.na(iris))
-```
+library(rpart)
+library(rpart.plot)
 
-**Conclusion :** Aucune valeur manquante ; le jeu est complet.
+model <- rpart(
+  Species ~ .,
+  data = iris,
+  method = "class",
+  parms = list(split = "gini")
+)
 
-## 1.3 Répartition par espèce
+summary(model)
 
-```{r table-species}
-table(iris$Species)
-```
 
-Les trois espèces sont **équilibrées** (50 observations chacune).
+# =============================================================================
+# ÉTAPE 4 : Visualisation de l’arbre
+# =============================================================================
 
-# 2. Statistiques descriptives et corrélations
 
-## 2.1 Tendance centrale et dispersion
+rpart.plot(
+  model,
+  type = 2,
+  extra = 104,
+  fallen.leaves = TRUE,
+  main = "Arbre de Décision - Iris Dataset"
+)
 
-```{r stats-espece}
-iris %>%
-  group_by(Species) %>%
-  summarise(
-    N = n(),
-    Moy_Sepal.L = round(mean(Sepal.Length), 2), SD_Sepal.L = round(sd(Sepal.Length), 2),
-    Moy_Petal.L = round(mean(Petal.Length), 2), SD_Petal.L = round(sd(Petal.Length), 2),
-    .groups = "drop"
-  ) %>%
-  knitr::kable()
-```
 
-**Insight :** Setosa a des pétales plus petits en moyenne ; Virginica des mesures plus grandes.
+# =============================================================================
+# ÉTAPE 5 : Frontière de décision (2 variables)
+# =============================================================================
 
-## 2.2 Corrélations
 
-```{r cor}
-round(cor(iris[, 1:4]), 3)
-```
+library(ggplot2)
 
-- **Petal.Length** et **Petal.Width** sont très fortement corrélés (~0,96).
-- Les mesures de pétale et de sépale sont positivement corrélées ; elles permettent de discriminer les espèces.
+ggplot(iris, aes(Petal.Length, Petal.Width, color = Species)) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  ggtitle("Distribution des espèces selon les pétales")
 
-## 2.3 Heatmap des corrélations
 
-```{r heatmap, fig.cap = "Heatmap des corrélations entre variables numériques."}
-mat_cor <- cor(iris[, 1:4])
-mat_cor_df <- as.data.frame(mat_cor)
-mat_cor_df$Var1 <- rownames(mat_cor_df)
-mat_cor_long <- mat_cor_df %>%
-  tidyr::pivot_longer(-Var1, names_to = "Var2", values_to = "Correlation")
 
-ggplot(mat_cor_long, aes(x = Var1, y = Var2, fill = Correlation)) +
-  geom_tile(color = "white", linewidth = 0.5) +
-  geom_text(aes(label = round(Correlation, 2)), color = "white", size = 4, fontface = "bold") +
-  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b", midpoint = 0) +
-  labs(title = "Heatmap des corrélations", x = NULL, y = NULL) +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1), panel.grid = element_blank()) +
-  coord_fixed()
-```
+# =============================================================================
+# ÉTAPE 6 : Prédiction d'une nouvelle fleur
+# =============================================================================
 
-# 3. Visualisations et tendances
 
-## 3.1 Histogrammes
+new_flower <- data.frame(
+  Sepal.Length = 5.1,
+  Sepal.Width  = 3.5,
+  Petal.Length = 1.4,
+  Petal.Width  = 0.2
+)
 
-```{r hist, fig.cap = "Distribution de la longueur du pétale par espèce."}
-ggplot(iris, aes(x = Petal.Length, fill = Species)) +
-  geom_histogram(aes(y = after_stat(density)), bins = 25, alpha = 0.7, position = "identity") +
-  geom_density(alpha = 0.4, linewidth = 0.8) +
-  scale_fill_manual(values = palette_especes) +
-  labs(x = "Longueur du pétale (cm)", y = "Densité") +
-  theme(legend.position = "bottom")
-```
-
-## 3.2 Boxplots et outliers
-
-```{r box, fig.cap = "Boxplots par espèce pour chaque variable."}
-iris_long <- iris %>%
-  pivot_longer(cols = Sepal.Length:Petal.Width, names_to = "Variable", values_to = "Valeur_cm")
-
-ggplot(iris_long, aes(x = Species, y = Valeur_cm, fill = Species)) +
-  geom_boxplot(alpha = 0.8) +
-  facet_wrap(~ Variable, scales = "free_y", ncol = 2) +
-  scale_fill_manual(values = palette_especes) +
-  labs(x = "Espèce", y = "Valeur (cm)") +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 20, hjust = 1))
-```
-
-**Analyse :** Différences nettes entre espèces ; quelques outliers (ex. Sepal.Width) sans remettre en cause les tendances.
-
-## 3.3 Scatter plot et séparation des espèces
-
-```{r scatter, fig.cap = "Séparation des espèces dans le plan Sépale–Pétale."}
-ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, color = Species, shape = Species)) +
-  geom_point(size = 3, alpha = 0.85) +
-  scale_color_manual(values = palette_especes) +
-  labs(x = "Longueur du sépale (cm)", y = "Longueur du pétale (cm)") +
-  theme(legend.position = "bottom")
-```
-
-**Réponses à la problématique :**
-
-- Les espèces sont **bien séparées** sur le scatter plot, surtout setosa.
-- **Patterns pour la classification :** Petal.Length et Petal.Width discriminent bien setosa ; la combinaison Sepal.Length × Petal.Length aide à distinguer versicolor et virginica.
-
-# 4. Synthèse et conclusions
-
-| Point | Conclusion |
-|-------|------------|
-| Structure | 150 observations, 4 variables numériques, 1 facteur ; pas de NA. |
-| Espèces | Équilibre parfait (50 par espèce). |
-| Corrélations | Petal.Length et Petal.Width très corrélés ; liens forts avec Sepal.Length. |
-| Tendance centrale | Setosa : pétales plus petits ; Virginica : mesures en moyenne plus grandes. |
-| Outliers | Quelques points atypiques (ex. Sepal.Width), impact limité. |
-| Séparation | Setosa bien séparée ; versicolor et virginica partiellement chevauchantes. |
-| Classification | Variables les plus discriminantes : **Petal.Length**, **Petal.Width**. |
-
----
-
-*Rapport généré avec R Markdown. Code et graphiques produits avec R et ggplot2.*
-
+predict(model, new_flower, type = "class")
 
