@@ -348,9 +348,117 @@ ggplot(iris, aes(Petal.Length, Petal.Width, color = Species)) +
 new_flower <- data.frame(
   Sepal.Length = 5.1,
   Sepal.Width  = 3.5,
-  Petal.Length = 1.4,
-  Petal.Width  = 0.2
+  Petal.Length = 4,
+  Petal.Width  = 1.2
 )
 
 predict(model, new_flower, type = "class")
 
+
+# =============================================================================
+# ÉTAPE 7 : Test des prédictions sur un échantillon de test
+# =============================================================================
+
+# Chargement de la librairie nécessaire
+library(dplyr)
+
+# Sélection aléatoire de 20 observations pour constituer un échantillon test
+TableTest <- iris[sample(nrow(iris), 20, replace = FALSE), ]
+
+# Définition de la variable cible (y)
+y <- iris$Species
+
+# Définition des variables explicatives (X)
+X <- iris
+X$Species <- NULL
+
+
+
+# =============================================================================
+# -----------------Séparation des données : Train / Test-----------------------
+# =============================================================================
+
+set.seed(123)
+
+# Échantillon test (20 observations)
+TableTest <- iris[sample(nrow(iris), 20, replace = FALSE), ]
+
+# Jeu d'entraînement = le reste des données
+Train <- iris[!rownames(iris) %in% rownames(TableTest), ]
+
+# Variables explicatives et cible
+X_train <- Train[, -5]
+y_train <- Train$Species
+
+X_test  <- TableTest[, -5]
+y_test  <- TableTest$Species
+
+
+
+# =============================================================================
+# Graphique – Distribution des espèce
+# =============================================================================
+
+
+library(ggplot2)
+
+ggplot(Train, aes(x = Species, fill = Species)) +
+  geom_bar() +
+  theme_minimal() +
+  labs(
+    title = "Répartition des espèces - Jeu d'entraînement",
+    x = "Espèce",
+    y = "Nombre d'observations"
+  ) +
+  theme(legend.position = "none")
+
+
+
+
+
+#Graphique clé (séparation des classes)
+ggplot(Train, aes(Petal.Length, Petal.Width, color = Species)) +
+  geom_point(size = 3, alpha = 0.8) +
+  theme_classic() +
+  labs(
+    title = "Séparation des espèces selon les dimensions des pétales",
+    x = "Longueur du pétale",
+    y = "Largeur du pétale"
+  )
+
+
+
+
+#Construction de l’arbre de décision
+pred_test <- predict(model, X_test, type = "class")
+
+# Matrice de confusion
+table(Prediction = pred_test,
+      Réel = y_test)
+
+
+
+#Calcul de l’Accuracy
+accuracy <- mean(pred_test == y_test)
+accuracy
+
+
+#Matrice de corrélation élégante
+
+install.packages("corrplot")
+library(corrplot)
+
+cor_matrix <- cor(Train[,1:4])
+
+corrplot(cor_matrix,
+         method = "color",
+         type = "upper",
+         tl.cex = 0.8,
+         title = "Matrice de corrélation - Variables explicatives",
+         mar = c(0,0,1,0))
+
+corrplot(cor_matrix,
+         method = "number",
+         type = "upper",
+         tl.col = "black",
+         tl.srt = 45)

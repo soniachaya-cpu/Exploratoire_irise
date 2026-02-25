@@ -1,32 +1,109 @@
 ---
-title: "Rapport d'analyse - Jeu de données Iris"
-author: "Sonia Chaya"
-date: "2026-02-25"
-output:
-  html_document:
-    df_print: paged
+title: "PROJET R1 – Analyse Exploratoire et Modélisation du Jeu de Données Iris"
+author: "Sonia CHAYA"
+date: "`r Sys.Date()`"
+output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+# 1. Introduction
 
-## R Markdown
+Le jeu de données **Iris** constitue une référence classique en analyse statistique et en apprentissage automatique.  
+Il contient 150 observations réparties en trois espèces de fleurs : *Setosa*, *Versicolor* et *Virginica*.  
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Chaque observation est décrite par quatre variables morphologiques :
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+- Sepal.Length  
+- Sepal.Width  
+- Petal.Length  
+- Petal.Width  
 
-```{r cars}
-summary(cars)
-```
+L’objectif est d’explorer les données et de construire un modèle de classification interprétable.
 
-## Including Plots
+---
 
-You can also embed plots, for example:
+# 2. Chargement des bibliothèques
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+```{r setup, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+library(corrplot)
+library(randomForest)
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+data(iris)
+theme_set(theme_minimal())
+
+str(iris)
+summary(iris)
+table(iris$Species)
+
+cor_matrix <- cor(iris[,1:4])
+round(cor_matrix,3)
+
+corrplot(cor_matrix,
+         method="color",
+         type="upper",
+         tl.cex=0.8)
+
+ggplot(iris, aes(x=Species, fill=Species)) +
+  geom_bar() +
+  theme(legend.position="none") +
+  labs(title="Répartition des espèces")
+
+ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(size=3, alpha=0.8) +
+  labs(title="Séparation des espèces selon les pétales")
+
+gini <- function(y){
+  p <- table(y)/length(y)
+  1 - sum(p^2)
+}
+
+gini(iris$Species)
+
+model <- rpart(Species ~ ., data=iris, method="class",
+               parms=list(split="gini"))
+
+rpart.plot(model,
+           type=2,
+           extra=104,
+           fallen.leaves=TRUE)
+
+set.seed(123)
+
+TableTest <- iris[sample(nrow(iris),20),]
+Train <- iris[!rownames(iris) %in% rownames(TableTest),]
+
+model_train <- rpart(Species ~ ., data=Train, method="class")
+
+pred_test <- predict(model_train, TableTest, type="class")
+
+
+accuracy <- mean(pred_test == TableTest$Species)
+error_rate <- 1 - accuracy
+
+accuracy
+error_rate
+
+model_cv <- rpart(Species ~ ., data=iris,
+                  method="class",
+                  control=rpart.control(xval=10))
+
+printcp(model_cv)
+plotcp(model_cv)
+
+pca <- prcomp(iris[,1:4], scale.=TRUE)
+pca_df <- data.frame(pca$x, Species=iris$Species)
+
+ggplot(pca_df, aes(PC1, PC2, color=Species)) +
+  geom_point(size=3) +
+  labs(title="Projection PCA des espèces")
+
+rf_model <- randomForest(Species ~ ., data=Train)
+
+pred_rf <- predict(rf_model, TableTest)
+
+mean(pred_rf == TableTest$Species)
+
+
