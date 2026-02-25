@@ -1,10 +1,10 @@
 # Exploratoire_irise
 
-## 📌 Project Overview
+##  Project Overview
 This project presents an exploratory data analysis (EDA) of the famous Iris dataset using R.  
 The objective is to analyze the structure of the dataset, compute descriptive statistics, and visualize relationships between variables in order to distinguish the three iris species.
 
-## 📊 Dataset Description
+##  Dataset Description
 The Iris dataset contains 150 observations and 5 variables:
 
 - Sepal.Length
@@ -13,39 +13,39 @@ The Iris dataset contains 150 observations and 5 variables:
 - Petal.Width
 - Species (Setosa, Versicolor, Virginica)
 
-## 🎯 Objectives
+##  Objectives
 - Examine the structure of the dataset
 - Compute descriptive statistics (mean, median, standard deviation)
 - Analyze correlations between quantitative variables
 - Visualize data using ggplot2
 - Identify patterns that differentiate iris species
 
-## 🛠 Tools and Libraries
+##  Tools and Libraries
 - R
 - ggplot2
 - dplyr
 - base R functions
 
-## 📈 Analysis Performed
+##  Analysis Performed
 - Summary statistics
 - Correlation matrix
 - Scatter plots
 - Boxplots by species
 - Comparative visual analysis
 
-## 🔎 Key Findings
+##  Key Findings
 - Petal length and petal width strongly differentiate species.
 - Setosa is clearly separable from the other two species.
 - Versicolor and Virginica show partial overlap but can still be distinguished using petal measurements.
 
-## 📂 Project Structure
+##  Project Structure
 - `Exploratoire_irise.Rproj`
 - `README.md`
 - (analysis script files)
 - (plots / outputs)
 
-## 👩‍💻 Author
+##  Author
 Sonia Chaya
 
-## 📅 Date
+##  Date
 2026
